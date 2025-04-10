@@ -1,0 +1,5 @@
+fastapi==0.115.12
+sentence-transformers==4.0.2
+numpy==1.26.4
+qdrant-client==1.13.3
+
