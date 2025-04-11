@@ -107,7 +107,7 @@ USER_COLLECTION = "user_profiles"
 #    )
 #
 # Global variable to store product embeddings
-product_embeddings = existing_product_embeddings
+# product_embeddings = existing_product_embeddings
 #
 # if USER_COLLECTION not in collections:
 #   qdrant_client.recreate_collection(
