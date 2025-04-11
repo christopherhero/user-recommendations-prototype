@@ -285,4 +285,4 @@ def get_product_recommendations(product_id: int):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=prcess.env.PORT, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=prcess.env.PORT, reload=True)
