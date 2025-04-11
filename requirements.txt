@@ -3,4 +3,5 @@ sentence-transformers==4.0.2
 numpy==1.26.4
 qdrant-client==1.13.3
 uvicorn==0.34.0
+python-multipart
 
