@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Form, Request
+from fastapi import FastAPI, HTTPException, Form, Request, Body
 from fastapi.responses import HTMLResponse
 from sentence_transformers import SentenceTransformer
 import numpy as np
@@ -11,23 +11,29 @@ app = FastAPI(title="Products Recommendation Service with Qdrant and User Profil
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def prepare_text(product: dict) -> str:
+    """:
+    Name: <name>,
+    Main category: <main_category>,
+    Categories: <comma separated categories>
+    Studios and Publishers: <comma separated companies>
+    Supported Languages: <comma separated languages>
+    Description: <description text>
+
+    If main_category is not present, it will be set to "games".
     """
-    Combines key product attributes with labels – fields we want to give higher weight
-    are repeated to help the model better capture their meaning.
-    """
-    name = f"Name: {product.get('name', '')}."
-    categories = ", ".join(product.get("categories", []))
-    categories_text = f"Category: {categories}. Primary Category: {categories}."
+    name = f"Product Name: {product.get('name', '')},"
+    main_category = product.get("main_category", "games")
+    main_cat_text = f"Main category: {main_category},"
+    categories = product.get("categories", [])
+    categories_text = f"Categories: {', '.join(categories)}"
     companies = ", ".join(product.get("companies", []))
-    companies_text = f"Companies: {companies}. Brand: {companies}."
+    companies_text = f"Studios and Publishers: {companies}"
     languages = ", ".join(product.get("supported_languages", []))
-    languages_text = f"Languages: {languages}. Supported Languages: {languages}."
-    pre_order = "Pre-Order" if product.get("is_pre_order", False) else "Available"
-    pre_order_text = f"Status: {pre_order}."
-    sys_req = product.get("system_requirements", "")
-    sys_req_text = f"System Requirements: {sys_req}."
-    description = f"Description: {product.get('description', '')}."
-    full_text = " ".join([name, categories_text, companies_text, languages_text, pre_order_text, sys_req_text, description])
+    languages_text = f"Supported Languages: {languages}"
+    description = product.get("description", "").strip()
+    description_text = f"Description: {description}"
+
+    full_text = "\n".join([name, main_cat_text, categories_text, companies_text, languages_text, description_text])
     return full_text
 
 VECTOR_SIZE = 384  # all-MiniLM-L6-v2 genrates 384-dimensional vectors
@@ -220,6 +226,29 @@ def interactions_page():
 @app.get("/products")
 def list_products():
     return products
+
+@app.post("/calculate_vector")
+def calculate_vector(product: dict = Body(...)):
+    """
+    Example input data:
+    {
+        "name": "Example Product",
+        "main_category": "Visual Novel", // optional
+        "categories": ["Action", "Adventure"],
+        "companies": ["Company1", "Company2"],
+        "supported_languages": ["English", "Polish"],
+        "description": "Product description here\nAdditional description line."
+    }
+    """
+    try:
+        text = prepare_text(product)
+        embedding = model.encode([text], convert_to_numpy=True)[0]
+        norm = np.linalg.norm(embedding)
+        normalized_embedding = embedding / norm if norm != 0 else embedding
+        return {"vector": normalized_embedding.tolist(), "prepared_text": text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calculating vector: {str(e)}")
+
 
 @app.get("/recommendations/{product_id}")
 def get_product_recommendations(product_id: int):
