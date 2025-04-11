@@ -34,6 +34,9 @@ def prepare_text(product: dict) -> str:
     description_text = f"Description: {description}"
 
     full_text = "\n".join([name, main_cat_text, categories_text, companies_text, languages_text, description_text])
+
+    print("Generated product text for embedding:\n", full_text)
+
     return full_text
 
 VECTOR_SIZE = 384  # all-MiniLM-L6-v2 genrates 384-dimensional vectors
@@ -282,4 +285,4 @@ def get_product_recommendations(product_id: int):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host="127.0.0.1", port=prcess.env.PORT, reload=True)
