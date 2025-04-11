@@ -43,80 +43,80 @@ VECTOR_SIZE = 384  # all-MiniLM-L6-v2 genrates 384-dimensional vectors
 PRODUCT_COLLECTION = "products"
 USER_COLLECTION = "user_profiles"
 
-qdrant_client = QdrantClient(host="localhost", port=6333)
+# qdrant_client = QdrantClient(host="localhost", port=6333)
 
 # Check if the collection exists and create it if not
-collections = [col.name for col in qdrant_client.get_collections().collections]
-if PRODUCT_COLLECTION not in collections:
-    qdrant_client.recreate_collection(
-        collection_name=PRODUCT_COLLECTION,
-        vectors_config=models.VectorParams(
-            size=VECTOR_SIZE,
-            distance=models.Distance.COSINE
-        )
-    )
+# collections = [col.name for col in qdrant_client.get_collections().collections]
+# if PRODUCT_COLLECTION not in collections:
+#    qdrant_client.recreate_collection(
+#        collection_name=PRODUCT_COLLECTION,
+#        vectors_config=models.VectorParams(
+#            size=VECTOR_SIZE,
+#            distance=models.Distance.COSINE
+#        )
+#    )
 
 # Prepare and encode product data
-prepared_texts = [prepare_text(p) for p in products]
-generated_embeddings = model.encode(prepared_texts, convert_to_numpy=True)
-norms = np.linalg.norm(generated_embeddings, axis=1, keepdims=True)
-norms_safe = np.where(norms == 0, 1, norms)
-normalized_embeddings = generated_embeddings / norms_safe
+# prepared_texts = [prepare_text(p) for p in products]
+# generated_embeddings = model.encode(prepared_texts, convert_to_numpy=True)
+# norms = np.linalg.norm(generated_embeddings, axis=1, keepdims=True)
+# norms_safe = np.where(norms == 0, 1, norms)
+# normalized_embeddings = generated_embeddings / norms_safe
 
 # Fetch existing product embeddings from Qdrant
-product_ids = [p["id"] for p in products]
-resp = qdrant_client.retrieve(
-    collection_name=PRODUCT_COLLECTION,
-    ids=product_ids,
-    with_vectors=True,
-    with_payload=True
-)
+# product_ids = [p["id"] for p in products]
+# resp = qdrant_client.retrieve(
+#    collection_name=PRODUCT_COLLECTION,
+#    ids=product_ids,
+#    with_vectors=True,
+#    with_payload=True
+# )
 
-existing_product_embeddings = {}
-if resp and len(resp) > 0:
-    for pt in resp:
-        if pt.vector is not None:
-            existing_product_embeddings[pt.id] = np.array(pt.vector)
+# existing_product_embeddings = {}
+# if resp and len(resp) > 0:
+#    for pt in resp:
+#        if pt.vector is not None:
+#            existing_product_embeddings[pt.id] = np.array(pt.vector)
 
 # For each product, check if it exists in Qdrant
-product_points_to_upsert = []
-for idx, p in enumerate(products):
-    pid = p["id"]
-    if pid not in existing_product_embeddings:
-        existing_product_embeddings[pid] = normalized_embeddings[idx]
-        point = models.PointStruct(
-            id=pid,
-            vector=normalized_embeddings[idx].tolist(),
-            payload={
-                "name": p.get("name", ""),
-                "companies": p.get("companies", []),
-                "categories": p.get("categories", []),
-                "supported_languages": p.get("supported_languages", []),
-                "is_pre_order": p.get("is_pre_order", False),
-                "system_requirements": p.get("system_requirements", ""),
-                "description": p.get("description", "")
-            }
-        )
-        product_points_to_upsert.append(point)
+# product_points_to_upsert = []
+# for idx, p in enumerate(products):
+#    pid = p["id"]
+#    if pid not in existing_product_embeddings:
+#        existing_product_embeddings[pid] = normalized_embeddings[idx]
+#        point = models.PointStruct(
+#            id=pid,
+#            vector=normalized_embeddings[idx].tolist(),
+#            payload={
+#                "name": p.get("name", ""),
+#                "companies": p.get("companies", []),
+#                "categories": p.get("categories", []),
+#                "supported_languages": p.get("supported_languages", []),
+#                "is_pre_order": p.get("is_pre_order", False),
+#                "system_requirements": p.get("system_requirements", ""),
+#                "description": p.get("description", "")
+#            }
+#        )
+#        product_points_to_upsert.append(point)
 
-if product_points_to_upsert:
-    qdrant_client.upsert(
-        collection_name=PRODUCT_COLLECTION,
-        wait=True,
-        points=product_points_to_upsert
-    )
-
+# if product_points_to_upsert:
+#    qdrant_client.upsert(
+#        collection_name=PRODUCT_COLLECTION,
+#        wait=True,
+#        points=product_points_to_upsert
+#    )
+#
 # Global variable to store product embeddings
 product_embeddings = existing_product_embeddings
-
-if USER_COLLECTION not in collections:
-    qdrant_client.recreate_collection(
-        collection_name=USER_COLLECTION,
-        vectors_config=models.VectorParams(
-            size=VECTOR_SIZE,
-            distance=models.Distance.COSINE
-        )
-    )
+#
+# if USER_COLLECTION not in collections:
+#   qdrant_client.recreate_collection(
+#        collection_name=USER_COLLECTION,
+#        vectors_config=models.VectorParams(
+#            size=VECTOR_SIZE,
+#            distance=models.Distance.COSINE
+#        )
+#    )
 
 # When creating the user collection, we can also set the payload schema
 def get_user_profile(user_id: str):
